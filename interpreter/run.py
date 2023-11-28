@@ -57,7 +57,7 @@ def runWhile(typ, start, end, body, env, program):
                     return # Jeżeli w ciele pętli trafiliśmy na fin, to się ewakuujemy
                 any_true = False
                 for ins in code:
-                    if runStatement(ins.cond, env, program) == "Ja":
+                    if runExpr(ins.cond, env, program) == "Ja":
                         any_true = True
                         runStatement(ins.then, env, program)
                         if env['fin'] > 0:
@@ -172,12 +172,12 @@ def runExpr(expr, env : dict, program):
                 return "Ja"
             else:
                 return "Nein"
-        case Greater(left, right):
+        case Greater(left, right, typ):
             if runExpr(left, env, program) > runExpr(right, env, program):
                 return "Ja"
             else:
                 return "Nein"
-        case Lower(left, right):
+        case Lower(left, right, typ):
             if runExpr(left, env, program) < runExpr(right, env, program):
                 return "Ja"
             else:
