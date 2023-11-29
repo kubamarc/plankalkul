@@ -141,7 +141,7 @@ def typecheck(ins, env, envOfPlans, program):
         case Fin(depth):
             if depth is None:
                 depth = 1
-            if depth > env['finDepth'] or depth < 0:
+            if int(depth) > env['finDepth'] or int(depth) < 0:
                 print("TypeError: To deep fin")
                 return False
             else:
@@ -423,21 +423,15 @@ def typeOfOutput(id, output, envOfPlans, env, expr, subEnv):
     else:
         if len(envOfPlans[id].output) == 1:
             res = variableWholeType(envOfPlans[id].output[0])
-            match res:
-                case MiUse():
-                    name = idOfVar(res)
-                    res = variableWholeType(subEnv[name])
-            expr.output = envOfPlans[id].output[0]
+            res = copyTyp(res, subEnv)
+            expr.output = copyExpr(envOfPlans[id].output[0], subEnv)
             return res
         res = []
         expr.output = []
         for i in envOfPlans[id].output:
-            res += [variableWholeType(i)]
-            match res:
-                case MiUse():
-                    name = idOfVar(res)
-                    res = variableWholeType(subEnv[name])
-            expr.output += [i]
+            t = [variableWholeType(i)]
+            res += copyTyp(t, subEnv)
+            expr.output += [copyExpr(i, subEnv)]
     return res
 
 
