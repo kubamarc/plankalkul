@@ -113,11 +113,11 @@ def typecheck(ins, env, envOfPlans, program):
             return res
         case While(typ, start, end, body):
             env['finDepth'] += 1
-            if typ != -1:
+            if typ != -1 and typ != 0:
                 env['namedWhileDepth'] += 1
             res = typecheck(body, env, envOfPlans, program)
             env['finDepth'] -= 1
-            if typ != -1:
+            if typ != -1 and typ != 0:
                 env['namedWhileDepth'] -= 1
             if not res:
                 print(f'while body type error {body}')
@@ -176,7 +176,7 @@ def inferExprType(expr, env, envOfPlans, program):
                     else:
                         return (True, ['integer'])
                 else:
-                    if id > env['namedWhileDepth'] or id < 0:
+                    if id >= env['namedWhileDepth'] or id < 0:
                         print("TypeError: Wrong i index depth")
                         return (False, None)
                     else:
@@ -267,7 +267,7 @@ def isExpOfType(expr, env, envOfPlans, if_type, program):
                 else:
                     return if_type in ['natural', 'integer']
             else:
-                if id > env['namedWhileDepth'] or id < 0:
+                if id >= env['namedWhileDepth'] or id < 0:
                     print("TypeError: Wrong i index depth")
                     return False
                 else:

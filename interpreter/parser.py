@@ -502,7 +502,7 @@ def p_index(p):
     if len(p) == 2:
         p[0] = Index(id = None)
     else:
-        p[0] = Index(id = p[3])
+        p[0] = Index(id = int(p[3]))
 
 
 def p_statements(p):

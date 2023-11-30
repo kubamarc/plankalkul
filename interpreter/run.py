@@ -62,7 +62,13 @@ def runWhile(typ, start, end, body, env, program):
                         runStatement(ins.then, env, program)
                         if env['fin'] > 0:
                             env['fin'] -= 1
-        case 0 | 1 | 2 | 3 | 4 | 5:
+        case 0:
+            for i in range(start, end):
+                runStatement(body, env, program)
+                if env['fin'] > 0:
+                    env['fin'] -= 1
+                    break
+        case 1 | 2 | 3 | 4 | 5:
             env['iDepth'] += 1
             iname = 'i' + str(env['iDepth'])
             if start < end:
