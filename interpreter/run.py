@@ -249,7 +249,7 @@ def setValOfVar(var_comp, val, structure, env, program):
     if var_comp is None or var_comp == [None]:
         structure = val
         return structure
-    if type(var_comp[0]) is Index or type(var_comp[0]) is Variable:
+    if type(var_comp[0]) in [Index, Variable, Const, Minus, Plus, Times, Divide]:
         comp = runExpr(var_comp[0], env, program)
         res = setValOfVar([None], val, structure.elements[comp], env, program)
         structure.elements[comp] = res
@@ -262,7 +262,7 @@ def setValOfVar(var_comp, val, structure, env, program):
 def getValOfVar(var_comp, val, env, program):
     if var_comp == [None] or var_comp is None:
         return val
-    if type(var_comp[0]) is Index or type(var_comp[0]) is Variable:
+    if type(var_comp[0]) in [Index, Variable, Const, Minus, Plus, Times, Divide]:
         comp = runExpr(var_comp[0], env, program)
         res = getValOfVar([None], val.elements[comp], env, program)
         return res

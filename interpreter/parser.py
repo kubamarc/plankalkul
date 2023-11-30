@@ -187,14 +187,9 @@ def p_component_seq(p):
 
 
 def p_component_part(p):
-    '''component_part : INTEGER
-                      | readable_var
-                      | index'''
+    '''component_part : expression'''
 
-    if isinstance(p[1], str):
-        p[0] = int(p[1])
-    else:
-        p[0] = p[1]
+    p[0] = p[1]
 
 
 def p_vtype(p):

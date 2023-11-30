@@ -87,7 +87,7 @@ def typecheckPlan(id, env, envOfPlans, program):
 def typecheck(ins, env, envOfPlans, program):
     match ins:
         case Assign(expr, var):
-            t_var = variableCompType(var)
+            t_var = variableCompType(var, env, envOfPlans, program)
             if not t_var:
                 return False
             if isExpOfType(expr, env, envOfPlans, t_var, program):
@@ -250,7 +250,7 @@ def isExpOfType(expr, env, envOfPlans, if_type, program):
             if name in env:
                 in_env = env[name]
                 if in_env == t:
-                    return variableCompType(expr) == if_type
+                    return variableCompType(expr, env, envOfPlans, program) == if_type
                 else:
                     print(f"TypeError: Variable {name} type missmatch with previous usage")
                     return False
@@ -465,11 +465,22 @@ def idOfVar(var):
 # What if we iterate in while throught list (or tuple) (i mean we use index i).
 # What should that function do in such situation?
 # I have literaly no idea
-def variableCompType(var):
+def variableCompType(var, env, envOfPlans, program):
     comp = var.component
     typ = var.typ
     while not (comp is None):
-        if type(comp[0]) is Index or type(comp[0]) is Variable:
+        if type(comp[0]) is Index or type(comp[0]) is Variable or type(comp[0]) is Const:
+            match typ:
+                case List(lenght, elements):
+                    typ = elements
+                    comp = None
+                case _:
+                    print(f"TypeError: type {type(typ)} is not indexable by variable")
+                    return False
+        elif type(comp[0]) in [Minus, Plus, Times, Divide]:
+            if not isExpOfType(comp[0], env, envOfPlans, 'integer', program):
+                print(f"TypeError: you cannot iterate with type other than integer")
+                return False
             match typ:
                 case List(lenght, elements):
                     typ = elements
