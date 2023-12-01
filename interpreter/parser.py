@@ -377,10 +377,15 @@ def p_factor_constant_int(p):
 
 
 def p_factor_constant_float(p):
-    'factor : INTEGER DOT INTEGER'
+    'factor : float'
 
-    res = float(f'{p[1]}.{p[3]}')
-    p[0] = Const(value = res, typ = "float")
+    p[0] = p[1]
+
+
+def p_float(p):
+    'float : INTEGER DOT INTEGER'
+
+    p[0] = float(f'{p[1]}.{p[3]}')
 
 
 def p_factor_constant_bool(p):
@@ -472,7 +477,7 @@ def p_operator(p):
 
 def p_number(p):
     '''number : INTEGER
-              | FLOAT'''
+              | float'''
 
     p[0] = p[1]
 
