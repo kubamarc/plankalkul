@@ -221,6 +221,8 @@ def runExpr(expr, env : dict, program):
                     return subEnv[res]
         case PhiUse(id, left, right, typ):
             pass
+        case Nfun(arg):
+            return len(env[idOfVar(arg)].elements)
 
 
 # This function creates data structure kept in variable. It's strict, all nodes are initialized to 0

@@ -240,6 +240,10 @@ def inferExprType(expr, env, envOfPlans, program):
                 return typecheckPlanCall(expr, env, envOfPlans, program)
             case PhiUse(id, left, right, typ):
                 pass
+            case Nfun(arg):
+                x = inferExprType(arg, env, envOfPlans, program)
+                if type(x[1]) is List:
+                    return True
 
 
 def isExpOfType(expr, env, envOfPlans, if_type, program):
@@ -325,6 +329,10 @@ def isExpOfType(expr, env, envOfPlans, if_type, program):
             return res[0] and res[1] == if_type
         case PhiUse(id, left, right, typ):
             pass
+        case Nfun(arg):
+            x = inferExprType(arg, env, envOfPlans, program)
+            if type(x[1]) is List:
+                return True
 
 
 def phiOperator(phi, env):

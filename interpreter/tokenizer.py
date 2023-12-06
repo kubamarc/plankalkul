@@ -37,7 +37,8 @@ tokens = [
    'DOT',
    'NEG',
    'PHI',
-   'MI'
+   'MI',
+   'LIST_LEN'
 ]
 
 # Regular expression rules for simple tokens
@@ -71,6 +72,7 @@ t_DOT     = r'\.'
 t_NEG     = r'~'
 t_PHI     = r'Phi'
 t_MI      = r'mi'
+t_LIST_LEN= r'N'
 
 
 # def t_FLOAT(t):

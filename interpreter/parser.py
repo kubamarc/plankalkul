@@ -346,6 +346,12 @@ def p_phi(p):
         p[0] = int(p[3])
 
 
+def p_expression_list_len(p):
+    'expression : LIST_LEN LPAREN readable_var RPAREN'
+
+    p[0] = Nfun(arg = p[3])
+
+
 def p_expression_term(p):
     'expression : term'
 
