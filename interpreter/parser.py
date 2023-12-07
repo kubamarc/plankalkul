@@ -211,6 +211,7 @@ def p_type_seq(p):
         else:
             p[0] = p[2]
 
+
 def p_type_part(p):
     '''type_part : INTEGER
                  | readable_var
@@ -222,6 +223,7 @@ def p_type_part(p):
     else:
        p[0] = p[1]
 
+
 def p_mi_call(p):
     '''mi_call : MI
                | MI LSQUBR INTEGER RSQUBR'''
@@ -230,7 +232,6 @@ def p_mi_call(p):
         p[0] = MiUse(id = p[3])
     else:
         p[0] = MiUse(id = None)
-
 
 
 def p_type_tuple(p):
@@ -352,6 +353,11 @@ def p_expression_list_len(p):
     p[0] = Nfun(arg = p[3])
 
 
+def p_expression_ger(p):
+    'expression : GER LPAREN expression RPAREN'
+
+    p[0] = Ger(arg = p[3])
+
 def p_expression_term(p):
     'expression : term'
 
@@ -385,7 +391,7 @@ def p_factor_constant_int(p):
 def p_factor_constant_float(p):
     'factor : float'
 
-    p[0] = p[1]
+    p[0] = Const(value = p[1], typ = "float")
 
 
 def p_float(p):

@@ -127,6 +127,11 @@ class Nfun:
 
 
 @dataclass
+class Ger:
+    arg : 'Expression'
+
+
+@dataclass
 class Assign:
     expr : 'Expression'
     var : 'Variable'
@@ -171,7 +176,7 @@ class PlanDef:
     body : 'Statement'
 
 
-Expression = Const | Variable | Index | Minus | Plus | Times | Divide | Equal | Greater | Lower | Neg | PhiUse | PlanCall
+Expression = Const | Variable | Index | Minus | Plus | Times | Divide | Equal | Greater | Lower | Neg | PhiUse | PlanCall | Nfun | Ger
 Statement = Assign | If | While | Codeblock | Print | Fin
 Program = PlanDef
 

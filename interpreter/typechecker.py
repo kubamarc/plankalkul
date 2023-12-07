@@ -131,10 +131,11 @@ def typecheck(ins, env, envOfPlans, program):
                     return res
             return True
         case Print(data):
-            for i in types_dict.values():
-                if isExpOfType(data, env, envOfPlans, i, program):
-                    return True
-            return False
+            r = inferExprType(data, env, envOfPlans, program)
+            if r[1] not in types_dict.values():
+                return False
+            else:
+                return True
         case PlanDef(id, mi, phi, input, output, body):
             print("TypeError: Declaration of plan inside another plan")
             return False
@@ -242,8 +243,10 @@ def inferExprType(expr, env, envOfPlans, program):
                 pass
             case Nfun(arg):
                 x = inferExprType(arg, env, envOfPlans, program)
-                if type(x[1]) is List:
-                    return True
+                return (type(x[1]) is List, ['integer'])
+            case Ger(arg):
+                res = isExpOfType(arg, env, envOfPlans, 'integer', program)
+                return (res, 'bool')
 
 
 def isExpOfType(expr, env, envOfPlans, if_type, program):
@@ -333,6 +336,14 @@ def isExpOfType(expr, env, envOfPlans, if_type, program):
             x = inferExprType(arg, env, envOfPlans, program)
             if type(x[1]) is List:
                 return True
+            print('TypeError: N function may be used only on lists')
+            return False
+        case Ger(arg):
+            x = isExpOfType(arg, env, envOfPlans, 'integer', program)
+            if x:
+                return if_type == 'bool'
+            print("TypeError: Ger function works only on integers")
+            return False
 
 
 def phiOperator(phi, env):
