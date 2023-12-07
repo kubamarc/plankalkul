@@ -39,7 +39,8 @@ tokens = [
    'PHI',
    'MI',
    'LIST_LEN',
-   'GER'
+   'GER',
+   'ORD'
 ]
 
 # Regular expression rules for simple tokens
@@ -75,6 +76,7 @@ t_PHI     = r'Phi'
 t_MI      = r'mi'
 t_LIST_LEN= r'N'
 t_GER     = r'Ger'
+t_ORD     = r'Ord'
 
 
 # def t_FLOAT(t):

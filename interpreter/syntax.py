@@ -132,6 +132,11 @@ class Ger:
 
 
 @dataclass
+class Ord:
+    arg : Variable
+
+
+@dataclass
 class Assign:
     expr : 'Expression'
     var : 'Variable'
@@ -176,7 +181,7 @@ class PlanDef:
     body : 'Statement'
 
 
-Expression = Const | Variable | Index | Minus | Plus | Times | Divide | Equal | Greater | Lower | Neg | PhiUse | PlanCall | Nfun | Ger
+Expression = Const | Variable | Index | Minus | Plus | Times | Divide | Equal | Greater | Lower | Neg | PhiUse | PlanCall | Nfun | Ger | Ord
 Statement = Assign | If | While | Codeblock | Print | Fin
 Program = PlanDef
 

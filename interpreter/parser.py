@@ -187,9 +187,15 @@ def p_component_seq(p):
 
 
 def p_component_part(p):
-    '''component_part : expression'''
+    # 'component_part : expression'
+    '''component_part : INTEGER empty
+                      | readable_var
+                      | index'''
 
-    p[0] = p[1]
+    if len(p) > 2:
+        p[0] = int(p[1])
+    else:
+        p[0] = p[1]
 
 
 def p_vtype(p):
@@ -357,6 +363,13 @@ def p_expression_ger(p):
     'expression : GER LPAREN expression RPAREN'
 
     p[0] = Ger(arg = p[3])
+
+
+def p_expression_ord(p):
+    'expression : ORD LPAREN readable_var RPAREN'
+
+    p[0] = Ord(arg = p[3])
+
 
 def p_expression_term(p):
     'expression : term'

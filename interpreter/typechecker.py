@@ -1,5 +1,5 @@
 from syntax import *
-import copy
+
 
 types = ['bool', 'bit_string', 'natural', 'integer', 'pos_float', 'float', 'complex']
 
@@ -159,7 +159,7 @@ def inferExprType(expr, env, envOfPlans, program):
                 if name in env:
                     in_env = env[name]
                     if in_env == t:
-                        return (True, in_env)
+                        return (True, variableCompType(expr, env, envOfPlans, program))
                     else:
                         print(f"TypeError: Variable {name} type missmatch with previous usage")
                         return (False, None)
@@ -242,11 +242,14 @@ def inferExprType(expr, env, envOfPlans, program):
             case PhiUse(id, left, right, typ):
                 pass
             case Nfun(arg):
-                x = inferExprType(arg, env, envOfPlans, program)
-                return (type(x[1]) is List, ['integer'])
+                res = inferExprType(arg, env, envOfPlans, program)
+                return (type(res[1]) is List, ['integer'])
             case Ger(arg):
                 res = isExpOfType(arg, env, envOfPlans, 'integer', program)
                 return (res, 'bool')
+            case Ord(arg):
+                res =  inferExprType(arg, env, envOfPlans, program)
+                return (type(res[1]) is List, res[1])
 
 
 def isExpOfType(expr, env, envOfPlans, if_type, program):
@@ -333,16 +336,22 @@ def isExpOfType(expr, env, envOfPlans, if_type, program):
         case PhiUse(id, left, right, typ):
             pass
         case Nfun(arg):
-            x = inferExprType(arg, env, envOfPlans, program)
-            if type(x[1]) is List:
-                return True
-            print('TypeError: N function may be used only on lists')
+            res = inferExprType(arg, env, envOfPlans, program)
+            if type(res[1]) is List:
+                return if_type == 'integer'
+            print('TypeError: N function may be used only on list')
             return False
         case Ger(arg):
-            x = isExpOfType(arg, env, envOfPlans, 'integer', program)
-            if x:
+            res = isExpOfType(arg, env, envOfPlans, 'integer', program)
+            if res:
                 return if_type == 'bool'
             print("TypeError: Ger function works only on integers")
+            return False
+        case Ord(arg):
+            res = inferExprType(arg, env, envOfPlans, program)
+            if type(res[1]) is List:
+                return res[1] == if_type
+            print('TypeError: Ord functions may be used only on list')
             return False
 
 

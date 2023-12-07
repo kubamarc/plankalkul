@@ -1,4 +1,5 @@
 from syntax import *
+import copy
 
 
 types = ['bool', 'bit_string', 'natural', 'integer', 'pos_float', 'float', 'complex']
@@ -229,6 +230,11 @@ def runExpr(expr, env : dict, program):
                 return 'Ja'
             else:
                 return 'Nein'
+        case Ord(arg):
+            r = runExpr(arg, env, program)
+            r2 = copy.deepcopy(r)
+            r2.elements.sort()
+            return r2
 
 
 # This function creates data structure kept in variable. It's strict, all nodes are initialized to 0
