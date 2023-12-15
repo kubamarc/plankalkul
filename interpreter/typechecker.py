@@ -175,13 +175,13 @@ def inferExprType(expr, env, envOfPlans, program):
                         print("TypeError: Can't match index i to its while")
                         return (False, None)
                     else:
-                        return (True, ['integer'])
+                        return (True, 'integer')
                 else:
                     if id >= env['namedWhileDepth'] or id < 0:
                         print("TypeError: Wrong i index depth")
                         return (False, None)
                     else:
-                        return (True, ['integer'])
+                        return (True, 'integer')
             case Plus(left, right, typ) | Times (left, right, typ):
                 match typ:
                     case List() | Tuple():
@@ -353,6 +353,12 @@ def isExpOfType(expr, env, envOfPlans, if_type, program):
                 return res[1] == if_type
             print('TypeError: Ord functions may be used only on list')
             return False
+        # case Exist(list, cond):
+        #     var_typ = inferExprType(list, env, envOfPlans, program)
+        #     if not type(res[1]) is list:
+        #         print('TypeError: Variable given to ')
+        #         return False
+        #     return isExpOfType(cond, env, envOfPlans, 'bool', program)
 
 
 def phiOperator(phi, env):

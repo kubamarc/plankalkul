@@ -123,7 +123,7 @@ class PlanCall:
 
 @dataclass
 class Nfun:
-    arg : Variable
+    arg : 'Variable'
 
 
 @dataclass
@@ -133,7 +133,19 @@ class Ger:
 
 @dataclass
 class Ord:
-    arg : Variable
+    arg : 'Variable'
+
+
+@dataclass
+class Exist:
+    list : 'Variable'
+    cond : 'Expression'
+
+
+@dataclass
+class Forall:
+    list : 'Variable'
+    cond : 'Expression'
 
 
 @dataclass

@@ -50,7 +50,7 @@ def p_mi_args(p):
 def p_mi_args_rec(p):
     '''mi_args_rec : empty
                    | mi_dec empty
-                   | mi_dec COMMA mi_args_rec''' # ale tu jest brzydki hak w drugiej linijce
+                   | mi_dec SEMICOL mi_args_rec''' # ale tu jest brzydki hak w drugiej linijce
 
     if len(p) == 2:
         p[0] = [None]
@@ -82,7 +82,7 @@ def p_phi_args(p):
 def p_phi_args_rec(p):
     '''phi_args_rec : empty
                     | phi empty
-                    | phi COMMA phi_args_rec''' # ale tu jest brzydki hak w drugiej linijce
+                    | phi SEMICOL phi_args_rec''' # ale tu jest brzydki hak w drugiej linijce
 
     if len(p) == 2:
         p[0] = [None]
@@ -103,7 +103,7 @@ def p_program_args(p):
 
 def p_program_args_rec(p):
     '''program_args_rec : VVAR variable_data
-                        | VVAR variable_data COMMA program_args_rec'''
+                        | VVAR variable_data SEMICOL program_args_rec'''
 
     if len(p) == 3:
         p[0] = [Variable(species = p[1], id = p[2][0], component = p[2][1], typ = p[2][2])]
@@ -123,7 +123,7 @@ def p_program_res(p):
 
 def p_program_res_rec(p):
     '''program_res_rec : RVAR variable_data
-                       | RVAR variable_data COMMA program_res_rec'''
+                       | RVAR variable_data SEMICOL program_res_rec'''
 
     if len(p) == 3:
         p[0] = [Variable(species = p[1], id = p[2][0], component = p[2][1], typ = p[2][2])]
@@ -161,7 +161,7 @@ def p_readable_var(p):
 
 
 def p_variable_data(p):
-    'variable_data : LSQUBR INTEGER COMMA vcomponent COMMA vtype RSQUBR'
+    'variable_data : LSQUBR INTEGER SEMICOL vcomponent SEMICOL vtype RSQUBR'
 
     p[0] = (p[2], p[4], p[6])
 
@@ -243,6 +243,7 @@ def p_mi_call(p):
 def p_type_tuple(p):
     '''type_tuple : type_seq
                   | type_seq COMMA type_tuple'''
+                  # | type_seq SEMICOL type_tuple'''
 
     if len(p) == 2:
         p[0] = Tuple(elements = (p[1],))
@@ -288,7 +289,7 @@ def p_while_numbered(p):
 
 
 def p_while_option(p):
-    '''while_option : INTEGER LPAREN INTEGER COMMA INTEGER RPAREN
+    '''while_option : INTEGER LPAREN INTEGER SEMICOL INTEGER RPAREN
                     | INTEGER LPAREN INTEGER RPAREN'''
 
     if len(p) == 5:
@@ -371,6 +372,13 @@ def p_expression_ord(p):
     p[0] = Ord(arg = p[3])
 
 
+# TODO: Wymyśłić składnię dla wiązania zmiennej w exiście i w Forallu
+# def p_expression_exist(p):
+#     'expression : EXIST LPAREN readable_var RPAREN LPAREN expression RPAREN'
+#
+#     p[0] = Exist(list = p[3], cond = p[6])
+
+
 def p_expression_term(p):
     'expression : term'
 
@@ -408,7 +416,7 @@ def p_factor_constant_float(p):
 
 
 def p_float(p):
-    'float : INTEGER DOT INTEGER'
+    'float : INTEGER COMMA INTEGER'
 
     p[0] = float(f'{p[1]}.{p[3]}')
 
@@ -420,7 +428,7 @@ def p_factor_constant_bool(p):
 
 
 def p_factor_constant_complex(p):
-    'factor : LPAREN number COMMA number RPAREN'
+    'factor : LPAREN number SEMICOL number RPAREN'
 
     p[0] = Const(value = (float(p[2]), float(p[4])), typ = "complex")
 
@@ -446,7 +454,7 @@ def p_mi_call_args(p):
 
 def p_mi_call_args_rec(p):
     '''mi_call_args_rec : type_part
-                        | type_part COMMA mi_call_args_rec'''
+                        | type_part SEMICOL mi_call_args_rec'''
 
     if len(p) == 2:
         p[0] = [MiCall(p[1])]
@@ -463,7 +471,7 @@ def p_phi_call_args(p):
 
 def p_phi_call_args_rec(p):
     '''phi_call_args_rec : operator
-                         | operator COMMA phi_call_args_rec'''
+                         | operator SEMICOL phi_call_args_rec'''
 
     if len(p) == 2:
         p[0] = [PhiCall(p[1])]
@@ -480,7 +488,7 @@ def p_program_call_args(p):
 
 def p_program_call_args_rec(p):
     '''program_call_args_rec : over_expression
-                             | over_expression COMMA program_call_args_rec'''
+                             | over_expression SEMICOL program_call_args_rec'''
 
     if len(p) == 2:
         p[0] = [p[1]]
