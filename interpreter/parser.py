@@ -372,13 +372,6 @@ def p_expression_ord(p):
     p[0] = Ord(arg = p[3])
 
 
-# TODO: Wymyśłić składnię dla wiązania zmiennej w exiście i w Forallu
-# def p_expression_exist(p):
-#     'expression : EXIST LPAREN readable_var RPAREN LPAREN expression RPAREN'
-#
-#     p[0] = Exist(list = p[3], cond = p[6])
-
-
 def p_expression_term(p):
     'expression : term'
 
@@ -556,7 +549,6 @@ def p_statements(p):
 
 def p_statement_codeblock(p):
     '''statement_codeblock : LCURBR maybe_separ statements RCURBR
-                           | LCURBR statements maybe_separ RCURBR
                            | statement'''
 
     if len(p) == 2:
