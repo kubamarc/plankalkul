@@ -23,7 +23,7 @@ class Envir:
         self.env = {"finDepth" : 0, "namedWhileDepth" : 0}
 
     def copy(self):
-        # Tworzymy głęboką kopię środowiska
+        # Making deep copy of env
         copied_environment = dict(self.environment_dict)
         return Enviroment(copied_environment)
 
@@ -34,7 +34,6 @@ def typecheckAll(program):
     for ins in program:
         match ins:
             case PlanDef(id, mi, phi, input, output, body):
-                # envOfPlans[id] = {'in' : input, 'out' : output, 'phi' : phi, 'body' : body}
                 envOfPlans[id] = ins
             case _:
                 print("TypeError: Top level instruction is not Plan")
@@ -45,14 +44,14 @@ def typecheckAll(program):
             if ins.id == 1:
                 print('TypeError: Plan of id 1 cannot take arguments')
             for var in ins.input:
-                t_var = variableWholeType(var)
+                t_var = varDeclaredTyp(var)
                 n_var = idOfVar(var)
                 env[n_var] = t_var
         if ins.output[0] is not None:
             if ins.id == 1:
                 print('TypeError: Plan of id 1 cannot return values')
             for var in ins.output:
-                t_var = variableWholeType(var)
+                t_var = varDeclaredTyp(var)
                 n_var = idOfVar(var)
                 env[n_var] = t_var
         if ins.phi[0] is not None:
@@ -87,21 +86,31 @@ def typecheckPlan(id, env, envOfPlans, program):
 def typecheck(ins, env, envOfPlans, program):
     match ins:
         case Assign(expr, var):
-            t_var = variableCompType(var, env, envOfPlans, program)
-            if not t_var:
-                return False
-            if isExpOfType(expr, env, envOfPlans, t_var, program):
-                name = idOfVar(var)
-                t = variableWholeType(var)
-                if name in env:
-                    if env[name] != t:
-                        print(f"TypeError: Multiple types assigned to one variable {idOfVar(var)}")
-                        return False
+            dec_type = varDeclaredTyp(var)
+            var_name = idOfVar(var)
+            comp = varComp(var)
+            whole_type = ""
+            if var_name in env:
+                whole_type = env[var_name]
+            else:
+                if not comp is None:
+                    print("First appearance of variable with non empty component.")
+                    return False
+                env[var_name] = dec_type
+                return isExpOfType(expr, env, envOfPlans, dec_type, program)
+            if comp is None:
+                if dec_type != whole_type:
+                    print("Type missmatch")
+                    return False
                 else:
-                    env[name] = variableWholeType(var)
-                return True
-            print(f"TypeError: Assign types missmatch, left side is not of type {t_var}")
-            return False
+                    return isExpOfType(expr, env, envOfPlans, dec_type, program)
+            if not comp is None:
+                var_comp_type = variableCompType(whole_type, comp, env, envOfPlans, program)
+                if var_comp_type != dec_type:
+                    print("Type missmatch")
+                    return False
+            return isExpOfType(expr, env, envOfPlans, dec_type, program)
+
         case If(cond, then):
             env['finDepth'] += 1
             if isExpOfType(cond, env, envOfPlans, 'bool', program):
@@ -125,10 +134,10 @@ def typecheck(ins, env, envOfPlans, program):
         case Codeblock(content):
             res = True
             for i in content:
-                res = res and typecheck(i, env, envOfPlans, program)
+                res = typecheck(i, env, envOfPlans, program)
                 if not res:
                     print(f"Type error in instruction {i}")
-                    return res
+                    return False
             return True
         case Print(data):
             r = inferExprType(data, env, envOfPlans, program)
@@ -147,6 +156,16 @@ def typecheck(ins, env, envOfPlans, program):
                 return False
             else:
                 return True
+        case Dec(var):
+            var_name = idOfVar(var)
+            if var_name in env:
+                print("Multiple declaration of variable")
+                return False
+            if not varComp(var) is None:
+                print("Component of declared variable is not empty")
+                return False
+            env[var_name] = varDeclaredTyp(var)
+            return True
         case _:
             return False
 
@@ -154,18 +173,25 @@ def typecheck(ins, env, envOfPlans, program):
 def inferExprType(expr, env, envOfPlans, program):
     match expr:
             case Variable(species, id, component, typ):
-                name = idOfVar(expr)
-                t = variableWholeType(expr)
-                if name in env:
-                    in_env = env[name]
-                    if in_env == t:
-                        return (True, variableCompType(expr, env, envOfPlans, program))
+                var_name = idOfVar(expr)
+                dec_type = varDeclaredTyp(expr)
+                var_comp = varComp(expr)
+                whole_type = None
+                if var_name in env:
+                    whole_type = env[var_name]
+                    if var_comp is None:
+                        if whole_type != dec_type:
+                            print("TypeError: Type missmatch")
+                            return (False, "")
+                        else:
+                            return (True, dec_type)
                     else:
-                        print(f"TypeError: Variable {name} type missmatch with previous usage")
-                        return (False, None)
-                else:
-                    print(f"TypeError: Variable {name} used before declaration")
-                    return (False, None)
+                        var_comp_type = variableCompType(whole_type, var_comp, env, envOfPlans, program)
+                        if var_comp_type != dec_type:
+                            print("TypeError: Type missmatch")
+                            return (False, None)
+                        else:
+                            return (True, dec_type)
             case Const():
                 print(f"TypeError: You cannot use constant value in here")
                 return (False, None)
@@ -255,18 +281,26 @@ def inferExprType(expr, env, envOfPlans, program):
 def isExpOfType(expr, env, envOfPlans, if_type, program):
     match expr:
         case Variable(species, id, component, typ):
-            name = idOfVar(expr)
-            t = variableWholeType(expr)
-            if name in env:
-                in_env = env[name]
-                if in_env == t:
-                    return variableCompType(expr, env, envOfPlans, program) == if_type
+            var_name = idOfVar(expr)
+            dec_type = varDeclaredTyp(expr)
+            var_comp = varComp(expr)
+            whole_type = None
+            if var_name in env:
+                whole_type = env[var_name]
+                if var_comp is None:
+                    if whole_type != dec_type:
+                        print(whole_type, dec_type, expr)
+                        print("TypeError: Type missmatch")
+                        return (False, "")
+                    else:
+                        return dec_type == if_type
                 else:
-                    print(f"TypeError: Variable {name} type missmatch with previous usage")
-                    return False
-            else:
-                print(f"TypeError: Variable {name} used before declaration")
-                return False
+                    var_comp_type = variableCompType(whole_type, var_comp, env, envOfPlans, program)
+                    if var_comp_type != dec_type:
+                        print("TypeError: Type missmatch")
+                        return (False, None)
+                    else:
+                        return dec_type == if_type
         case Const(value, typ):
                 return (typ == if_type)
         case Index(id):
@@ -353,12 +387,11 @@ def isExpOfType(expr, env, envOfPlans, if_type, program):
                 return res[1] == if_type
             print('TypeError: Ord functions may be used only on list')
             return False
-        # case Exist(list, cond):
-        #     var_typ = inferExprType(list, env, envOfPlans, program)
-        #     if not type(res[1]) is list:
-        #         print('TypeError: Variable given to ')
-        #         return False
-        #     return isExpOfType(cond, env, envOfPlans, 'bool', program)
+        # case Im(var, list):
+        #     is_list = inferExprType(list, env, envOfPlans, program)
+        #     if type(is_list[1]) is List:
+        #         print()
+        #     print(var, list, if_type, is_list)
 
 
 def phiOperator(phi, env):
@@ -405,13 +438,16 @@ def typecheckPlanCall(expr, env, envOfPlans, program):
                         subEnv[phi_name] = phi_op
                 if expr.input is not None:
                     for in_index in range(len(expr.input)):
-                        in_type = variableWholeType(envOfPlans[id].input[in_index])  #TODO: Co jeśli ktoś w nagłówku funkcji poda zmienną z komponentem?
+                        in_type = varDeclaredTyp(envOfPlans[id].input[in_index])
                         in_name = idOfVar(envOfPlans[id].input[in_index])
-                        match in_type:
-                            case MiUse():
-                                in_type = expr.input[in_index]
-                                in_type = in_type.typ
-                        subEnv[in_name] = in_type
+                        in_type = copyTyp(in_type, subEnv)
+                        subEnv[in_name] = intToType(in_type)
+                if not envOfPlans[id].output is []:
+                    for out_index in range(len(envOfPlans[id].output)):
+                        out_type = varDeclaredTyp(envOfPlans[id].output[out_index])
+                        out_name = idOfVar(envOfPlans[id].output[out_index])
+                        out_type = copyTyp(out_type, subEnv)
+                        subEnv[out_name] = intToType(out_type)
                 name, res = typecheckPlan(id, subEnv, envOfPlans, program)
                 expr.id = name
                 return (res, out)
@@ -425,7 +461,7 @@ def inputFits(id, input, envOfPlans, env, program, subEnv):
     if len(input) != len(envOfPlans[id].input) or envOfPlans[id].input[0] is None:
         return False
     for i in range(len(input)):
-        t1 = variableWholeType(envOfPlans[id].input[i])
+        t1 = varDeclaredTyp(envOfPlans[id].input[i])
         match t1:
             case MiUse():
                 name = idOfVar(t1)
@@ -456,14 +492,14 @@ def typeOfOutput(id, output, envOfPlans, env, expr, subEnv):
         return []
     else:
         if len(envOfPlans[id].output) == 1:
-            res = variableWholeType(envOfPlans[id].output[0])
+            res = varDeclaredTyp(envOfPlans[id].output[0])
             res = copyTyp(res, subEnv)
             expr.output = copyExpr(envOfPlans[id].output[0], subEnv)
             return res
         res = []
         expr.output = []
         for i in envOfPlans[id].output:
-            t = [variableWholeType(i)]
+            t = [varDeclaredTyp(i)]
             res += copyTyp(t, subEnv)
             expr.output += [copyExpr(i, subEnv)]
     return res
@@ -499,9 +535,7 @@ def idOfVar(var):
 # What if we iterate in while throught list (or tuple) (i mean we use index i).
 # What should that function do in such situation?
 # I have literaly no idea
-def variableCompType(var, env, envOfPlans, program):
-    comp = var.component
-    typ = var.typ
+def variableCompType(typ, comp, env, envOfPlans, program):
     while not (comp is None):
         if type(comp[0]) is Index or type(comp[0]) is Variable or type(comp[0]) is Const:
             match typ:
@@ -548,7 +582,7 @@ def variableCompType(var, env, envOfPlans, program):
             return types_dict[typ]
 
 
-def variableWholeType(var):
+def varDeclaredTyp(var):
     if isinstance(var, int):
         return types_dict[var]
     match var.typ:
@@ -558,6 +592,16 @@ def variableWholeType(var):
             return var.typ
         case _:
             return types_dict[var.typ]
+
+
+def intToType(var):
+        if isinstance(var, int):
+            return types_dict[var]
+        else:
+            return var
+
+def varComp(var):
+    return var.component
 
 
 def createPlanName(envOfPlans, id, env):

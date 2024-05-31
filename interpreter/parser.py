@@ -5,7 +5,7 @@ from tokenizer import *
 
 import sys
 
-# start = 'statements'
+
 start = 'program'
 
 
@@ -135,7 +135,8 @@ def p_statement(p):
     '''statement : statement_assign
                  | statement_if
                  | statement_while
-                 | statement_print'''
+                 | statement_print
+                 | statement_declar'''
 
     p[0] = p[1]
 
@@ -156,6 +157,12 @@ def p_writeable_var(p):
 def p_readable_var(p):
     '''readable_var : ZVAR variable_data
                     | VVAR variable_data'''
+
+    p[0] = Variable(species = p[1], id = p[2][0], component = p[2][1], typ = p[2][2])
+
+
+def p_z_var(p):
+    '''z_var : ZVAR variable_data'''
 
     p[0] = Variable(species = p[1], id = p[2][0], component = p[2][1], typ = p[2][2])
 
@@ -242,8 +249,8 @@ def p_mi_call(p):
 
 def p_type_tuple(p):
     '''type_tuple : type_seq
-                  | type_seq COMMA type_tuple'''
-                  # | type_seq SEMICOL type_tuple'''
+                  | type_seq SEMICOL type_tuple'''
+                  # | type_seq COMMA type_tuple'''
 
     if len(p) == 2:
         p[0] = Tuple(elements = (p[1],))
@@ -260,6 +267,12 @@ def p_empty(p):
 def p_error(p):
     print(f"Syntax error: {p}")
     raise SyntaxError # Gdy będę chciał mieć, żeby error syntaxu wywalał całość, trzeba odkomentować tę linijkę
+
+
+def p_statement_declar(p):
+    '''statement_declar : DEKLAR z_var'''
+
+    p[0] = Dec(var = p[2])
 
 
 def p_statement_if(p):

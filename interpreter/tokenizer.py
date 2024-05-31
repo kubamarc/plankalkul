@@ -6,7 +6,7 @@ import sys
 # List of token names. This is always required
 tokens = [
    'INTEGER',
-   'FLOAT',
+   # 'FLOAT',
    # 'COMPLEX',
    'PLUS',
    'MINUS',
@@ -41,8 +41,9 @@ tokens = [
    'LIST_LEN',
    'GER',
    'ORD',
-   'EXIST',
-   'SEMICOL'
+   'SEMICOL',
+   'IM',
+   'DEKLAR'
 ]
 
 # Regular expression rules for simple tokens
@@ -79,10 +80,9 @@ t_MI      = r'mi'
 t_LIST_LEN= r'N'
 t_GER     = r'Ger'
 t_ORD     = r'Ord'
-t_EXIST   = r'E'
 t_SEMICOL = r';'
-
-
+t_IM      = r'im'
+t_DEKLAR  = r'Deklarieren'
 # def t_FLOAT(t):
 #     r'[-+]?\d+\.\d+'
 #     t.value = float(t.value)

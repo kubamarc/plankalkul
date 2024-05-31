@@ -149,6 +149,11 @@ class Forall:
 
 
 @dataclass
+class Im:
+    var : 'Variable'
+    list : 'List | Tuple'
+
+@dataclass
 class Assign:
     expr : 'Expression'
     var : 'Variable'
@@ -184,6 +189,11 @@ class Fin:
 
 
 @dataclass
+class Dec:
+    var : 'Variable'
+
+
+@dataclass
 class PlanDef:
     id : tuple
     mi : list
@@ -194,7 +204,7 @@ class PlanDef:
 
 
 Expression = Const | Variable | Index | Minus | Plus | Times | Divide | Equal | Greater | Lower | Neg | PhiUse | PlanCall | Nfun | Ger | Ord
-Statement = Assign | If | While | Codeblock | Print | Fin
+Statement = Assign | If | While | Codeblock | Print | Fin | Dec
 Program = PlanDef
 
 

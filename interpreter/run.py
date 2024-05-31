@@ -89,6 +89,9 @@ def runWhile(typ, start, end, body, env, program):
 def runStatement(ins, env, program):
     match ins:
         case PlanDef(id, mi, phi, input, output, body):
+            for o in output:
+                if o is not None:
+                    env[idOfVar(o)] = createValOfVar(o.typ)
             runStatement(body, env, program)
         case Assign(expr, var):
             val = runExpr(expr, env, program)
@@ -111,6 +114,9 @@ def runStatement(ins, env, program):
                     return
         case Print(data):
             print(runExpr(data, env, program))
+        case Dec(var):
+            name = idOfVar(var)
+            env[name] = createValOfVar(var.typ)
 
 
 def runExpr(expr, env : dict, program):
@@ -250,19 +256,19 @@ def createValOfVar(var_type):
         case _:
             match types_dict[var_type]:
                 case 'bool':
-                    return "Nein"
+                    return None
                 case 'bit_string':
-                    return 0
+                    return None
                 case 'natural':
-                    return 0
+                    return None
                 case 'integer':
-                    return 0
+                    return None
                 case 'pos_float':
-                    return 0.0
+                    return None
                 case 'float':
-                    return 0.0
+                    return None
                 case 'complex':
-                    return (0.0, 0.0)
+                    return None
 
 
 def setValOfVar(var_comp, val, structure, env, program):
