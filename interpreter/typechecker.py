@@ -1,4 +1,13 @@
 from syntax import *
+import sys
+
+
+#If type checking fails, raise an exception and terminate the process.
+class TypecheckError(Exception):
+    def __init__(self, message):
+        super().__init__(message)
+        print(f"TypecheckError occurred: {message}")
+        sys.exit(1)
 
 
 types = ['bool', 'bit_string', 'natural', 'integer', 'pos_float', 'float', 'complex']
@@ -36,34 +45,33 @@ def typecheckAll(program):
             case PlanDef(id, mi, phi, input, output, body):
                 envOfPlans[id] = ins
             case _:
-                print("TypeError: Top level instruction is not Plan")
+                raise TypecheckError("Top level instruction is not Plan")
                 return (False, {})
     for ins in program:
         env = Envir().env
         if ins.input[0] is not None:
             if ins.id == 1:
-                print('TypeError: Plan of id 1 cannot take arguments')
+                raise TypecheckError("Plan with id 1 cannot take arguments")
             for var in ins.input:
                 t_var = varDeclaredTyp(var)
                 n_var = idOfVar(var)
                 env[n_var] = t_var
         if ins.output[0] is not None:
             if ins.id == 1:
-                print('TypeError: Plan of id 1 cannot return values')
+                raise TypecheckError("Plan with id 1 cannot return values")
             for var in ins.output:
                 t_var = varDeclaredTyp(var)
                 n_var = idOfVar(var)
                 env[n_var] = t_var
         if ins.phi[0] is not None:
             if ins.id == 1:
-                print('TypeError: Plan of id 1 cannot take operation arguments')
-            for p in ins.phi:
-                n_var = idOfVar(p)
-                env[n_var] = ''
+                raise TypecheckError("Plan with id 1 cannot take operation arguments")
+        if ins.mi[0] is not None:
+            if ins.id == 1:
+                raise TypecheckError("Plan with id 1 cannot take type arguments")
         if ins.phi[0] is None and ins.mi[0] is None:
             t = typecheckPlan(ins.id, env, envOfPlans, envOfChecked)
             if not t[1]:
-                print('TypeError: Something went badly')
                 return (False, {})
     return (True, envOfChecked)
 
@@ -94,32 +102,34 @@ def typecheck(ins, env, envOfPlans, program):
                 whole_type = env[var_name]
             else:
                 if not comp is None:
-                    print("First appearance of variable with non empty component.")
-                    return False
+                    raise TypecheckError("First appearance of variable with non empty component")
                 env[var_name] = dec_type
-                return isExpOfType(expr, env, envOfPlans, dec_type, program)
+                res = isExpOfType(expr, env, envOfPlans, dec_type, program)
+                if not res:
+                    raise TypecheckError("Type mismatch: The type of the variable does not match the declared type")
+                return res
             if comp is None:
                 if dec_type != whole_type:
-                    print("Type missmatch")
-                    return False
+                    raise TypecheckError("Type mismatch: The type of the variable does not match the declared type")
                 else:
-                    return isExpOfType(expr, env, envOfPlans, dec_type, program)
+                    res = isExpOfType(expr, env, envOfPlans, dec_type, program)
+                    return res
             if not comp is None:
                 var_comp_type = variableCompType(whole_type, comp, env, envOfPlans, program)
                 if var_comp_type != dec_type:
-                    print("Type missmatch")
-                    return False
-            return isExpOfType(expr, env, envOfPlans, dec_type, program)
-
+                    raise TypecheckError("Type mismatch: The type of the variable does not match the declared type")
+            res = isExpOfType(expr, env, envOfPlans, dec_type, program)
+            return res
         case If(cond, then):
             env['finDepth'] += 1
             if isExpOfType(cond, env, envOfPlans, 'bool', program):
                 res =  typecheck(then, env, envOfPlans, program)
+                env['finDepth'] -= 1
+                if not res:
+                    raise TypecheckError("If condition not of Ja-Nein type")
+                return res
             else:
-                print("TypeError: If condition is not of type bool")
-                res = False
-            env['finDepth'] -= 1
-            return res
+                raise TypecheckError("If condition is not of type bool")
         case While(typ, start, end, body):
             env['finDepth'] += 1
             if typ != -1 and typ != 0:
@@ -129,41 +139,37 @@ def typecheck(ins, env, envOfPlans, program):
             if typ != -1 and typ != 0:
                 env['namedWhileDepth'] -= 1
             if not res:
-                print(f'while body type error {body}')
+                raise TypecheckError(f'while body type error')
             return res
         case Codeblock(content):
             res = True
             for i in content:
                 res = typecheck(i, env, envOfPlans, program)
                 if not res:
-                    print(f"Type error in instruction {i}")
+                    raise TypecheckError(f"Type error")
                     return False
             return True
         case Print(data):
             r = inferExprType(data, env, envOfPlans, program)
             if r[1] not in types_dict.values():
-                return False
+                raise TypecheckError("Unprintable data given to Drucken")
             else:
                 return True
         case PlanDef(id, mi, phi, input, output, body):
-            print("TypeError: Declaration of plan inside another plan")
-            return False
+            raise TypecheckError("Declaration of plan inside another plan")
         case Fin(depth):
             if depth is None:
                 depth = 1
             if int(depth) > env['finDepth'] or int(depth) < 0:
-                print("TypeError: To deep fin")
-                return False
+                raise TypecheckError("To deep fin")
             else:
                 return True
         case Dec(var):
             var_name = idOfVar(var)
             if var_name in env:
-                print("Multiple declaration of variable")
-                return False
+                raise TypecheckError("Multiple declaration of variable")
             if not varComp(var) is None:
-                print("Component of declared variable is not empty")
-                return False
+                raise TypecheckError("Component of declared variable is not empty")
             env[var_name] = varDeclaredTyp(var)
             return True
         case _:
@@ -181,37 +187,32 @@ def inferExprType(expr, env, envOfPlans, program):
                     whole_type = env[var_name]
                     if var_comp is None:
                         if whole_type != dec_type:
-                            print("TypeError: Type missmatch")
-                            return (False, "")
+                            raise TypecheckError("Type mismatch: The type of the variable does not match the declared type")
                         else:
                             return (True, dec_type)
                     else:
                         var_comp_type = variableCompType(whole_type, var_comp, env, envOfPlans, program)
                         if var_comp_type != dec_type:
-                            print("TypeError: Type missmatch")
-                            return (False, None)
+                            raise TypecheckError("Type mismatch: The type of the variable does not match the declared type")
                         else:
                             return (True, dec_type)
             case Const():
-                print(f"TypeError: You cannot use constant value in here")
-                return (False, None)
+                raise TypecheckError(f"Const value in inappropriate place")
             case Index(id):
                 if id is None:
                     if env['namedWhileDepth'] != 1: # If While depth is higher than one, you need to give i an index
-                        print("TypeError: Can't match index i to its while")
-                        return (False, None)
+                        raise TypecheckError("Can't match index i to its while")
                     else:
                         return (True, 'integer')
                 else:
                     if id >= env['namedWhileDepth'] or id < 0:
-                        print("TypeError: Wrong i index depth")
-                        return (False, None)
+                        raise TypecheckError("Wrong i index depth")
                     else:
                         return (True, 'integer')
             case Plus(left, right, typ) | Times (left, right, typ):
                 match typ:
                     case List() | Tuple():
-                        return (False, None)
+                        raise TypecheckError("Cannot make arithmetic operations on Lists or Tuples")
                     case _:
                         t1 = inferExprType(left, env, envOfPlans, program)
                         if not t1[0]:
@@ -219,63 +220,75 @@ def inferExprType(expr, env, envOfPlans, program):
                         if isExpOfType(right, env, envOfPlans, t1[1], program):
                             expr.typ = t1[1]
                             return (True, t1[1])
-                return (False, None)
+                raise TypecheckError("Cannot match Addition/Multiplication operation to given type")
             case Minus(left, right, typ) | Divide(left, right, typ):
                 match typ:
                     case List() | Tuple():
-                        return (False, None)
+                        raise TypecheckError("Cannot use arithmetic operations on Lists or Tuples")
                     case _:
                         t1 = inferExprType(left, env, envOfPlans, program)
                         if not t1[0]:
                             return t1
                         if t1[1] == types_dict[0]:
-                            print(f"TypeError: Non boolean operation called on boolean expression")
-                            return (False, None)
+                            raise TypecheckError(f"Non boolean operation called on boolean expression")
                         if isExpOfType(right, env, envOfPlans, t1[1], program):
                             expr.typ = t1[1]
                             return (True, t1[1])
-                return (False, None)
+                raise TypecheckError("Cannot match Substraction/Division operation to given type")
             case Equal(left, right, typ):
                 match typ:
                     case List() | Tuple():
-                        return (False, None)
+                        raise TypecheckError("Cannot make arithmetic operations on Lists or Tuples")
                     case _:
                         t1 = inferExprType(left, env, envOfPlans, program)
                         if not t1[0]:
                             return t1
                         if isExpOfType(right, env, envOfPlans, t1[1], program):
                             return (True, t1[1])
-                return (False, None)
+                raise TypecheckError("Cannot match Comparison operation to given type")
             case Greater(left, right, typ) | Lower(left, right, typ):
                 match typ:
                     case List() | Tuple():
-                        return (False, None)
+                        raise TypecheckError("Cannot make arithmetic operations on Lists or Tuples")
                     case _:
                         t1 = inferExprType(left, env, envOfPlans, program)
                         if not t1[0]:
                             return t1
                         if t1[1] == types_dict[0]:
-                            print(f"TypeError: Comparison operator called on booleans")
-                            return (False, None)
+                            raise TypecheckError(f"Comparison operator called on type 0")
                             if isExpOfType(right, env, envOfPlans, t1[1], program):
                                 expr.typ = t1[1]
                                 return (True, t1[1])
-                return (False, None)
+                raise TypecheckError("Cannot match Comparison operation to given type")
             case Neg(body):
-                return (isExpOfType(body, env, envOfPlans, 'bool', program), 'bool')
+                res = (isExpOfType(body, env, envOfPlans, 'bool', program), 'bool')
+                if res[0]:
+                    return res
+                raise TypecheckError(f"Negation used not on type 0")
             case PlanCall(id, mi, phi, input, output):
-                return typecheckPlanCall(expr, env, envOfPlans, program)
+                res = typecheckPlanCall(expr, env, envOfPlans, program)
+                if res[0]:
+                    return res
+                raise TypecheckError("Plan call typechecking failed")
             case PhiUse(id, left, right, typ):
-                pass
+                raise TypecheckError("Something went bad as hell, please report that, or change something in your code")
             case Nfun(arg):
                 res = inferExprType(arg, env, envOfPlans, program)
-                return (type(res[1]) is List, ['integer'])
+                res = (type(res[1]) is List, ['integer'])
+                if res[0]:
+                    return res
+                raise TypecheckError("Function N should be used on List")
             case Ger(arg):
                 res = isExpOfType(arg, env, envOfPlans, 'integer', program)
-                return (res, 'bool')
+                if res:
+                    return (res, 'bool')
+                raise TypecheckError("function Ger should be used on type 10")
             case Ord(arg):
                 res =  inferExprType(arg, env, envOfPlans, program)
-                return (type(res[1]) is List, res[1])
+                res = (type(res[1]) is List, res[1])
+                if res[0]:
+                    return res
+                raise TypecheckError("Function Ord should be used on List")
 
 
 def isExpOfType(expr, env, envOfPlans, if_type, program):
@@ -289,16 +302,13 @@ def isExpOfType(expr, env, envOfPlans, if_type, program):
                 whole_type = env[var_name]
                 if var_comp is None:
                     if whole_type != dec_type:
-                        print(whole_type, dec_type, expr)
-                        print("TypeError: Type missmatch")
-                        return (False, "")
+                        raise TypecheckError("Type mismatch with the previous usage of the variable")
                     else:
                         return dec_type == if_type
                 else:
                     var_comp_type = variableCompType(whole_type, var_comp, env, envOfPlans, program)
                     if var_comp_type != dec_type:
-                        print("TypeError: Type missmatch")
-                        return (False, None)
+                        raise TypecheckError("Type missmatch")
                     else:
                         return dec_type == if_type
         case Const(value, typ):
@@ -306,43 +316,41 @@ def isExpOfType(expr, env, envOfPlans, if_type, program):
         case Index(id):
             if id is None:
                 if env['namedWhileDepth'] != 1: # If While depth is higher than one, you need to give i an index
-                    print("TypeError: Can't match index i to its while")
-                    return False
+                    raise TypecheckError("Can't match index i to its while")
                 else:
                     return if_type in ['natural', 'integer']
             else:
                 if id >= env['namedWhileDepth'] or id < 0:
-                    print("TypeError: Wrong i index depth")
-                    return False
+                    raise TypecheckError("Wrong i index depth")
                 else:
                     return if_type in ['integer']
 
         case Plus(left, right, typ) | Times (left, right, typ):
             match typ:
                 case List() | Tuple():
-                    return False
+                    raise TypecheckError("Cannot use arithmetic operations on Lists or Tuples")
                 case _:
                     if isExpOfType(left, env, envOfPlans, if_type, program) and isExpOfType(right, env, envOfPlans, if_type, program):
                         expr.typ = if_type
                         return True
-            return False
+            raise TypecheckError("Cannot match Addition/Multiplication operation to given type")
         case Minus(left, right, typ) | Divide(left, right, typ):
             if if_type == types_dict[0]: # Czy umiemy dodawać typ 8?
-                return False
+                raise TypecheckError(f"Return type of substraction/division operation cannot be 0 type")
             match typ:
                 case List() | Tuple():
-                    return False
+                    raise TypecheckError("Cannot use arithmetic operations on Lists or Tuples")
                 case _:
                     if isExpOfType(left, env, envOfPlans, if_type, program) and isExpOfType(right, env, envOfPlans, if_type, program):
                         expr.typ = if_type
                         return True
-            return False
+            raise TypecheckError("Cannot match Substraction/Division operation to given type")
         case Equal(left, right, typ):
             if not if_type == types_dict[0]:
-                return False
+                raise TypecheckError(f"Equality comparison return type should be Ja-Nein-Vert, not {if_type}")
             match typ:
                 case List() | Tuple():
-                    return False #TODO: Dopisać kawałek robiący porównanie typów dla list i tupli
+                    raise TypecheckError("Cannot use arithmetic operations on Lists or Tuples")
                 case _:
                     t1 = inferExprType(left, env, envOfPlans, program)
                     if isExpOfType(right, env, envOfPlans, t1[1], program):
@@ -351,10 +359,10 @@ def isExpOfType(expr, env, envOfPlans, if_type, program):
             return False
         case Greater(left, right, typ) | Lower(left, right, typ):
             if not if_type == types_dict[0]:
-                return False
+                raise TypecheckError(f"Comparison return type should be Ja-Nein-Vert, not {if_type}")
             match typ:
                 case List() | Tuple():
-                    return False
+                    raise TypecheckError("Cannot use comparison operations on Lists or Tuples")
                 case _:
                     t1 = inferExprType(left, env, envOfPlans, program)
                     expr.typ = if_type
@@ -362,31 +370,26 @@ def isExpOfType(expr, env, envOfPlans, if_type, program):
             return False
         case Neg(body):
             if if_type != types_dict[0]:
-                return False
+                raise TypecheckError(f"Negation needs to return type of Ja-Nein-Vert, not {if_type}")
             return isExpOfType(body, env, envOfPlans, types_dict[0], program)
         case PlanCall(id, mi, phi, input, output):
             res = typecheckPlanCall(expr, env, envOfPlans, program)
             return res[0] and res[1] == if_type
-        case PhiUse(id, left, right, typ):
-            pass
         case Nfun(arg):
             res = inferExprType(arg, env, envOfPlans, program)
             if type(res[1]) is List:
                 return if_type == 'integer'
-            print('TypeError: N function may be used only on list')
-            return False
+            raise TypecheckError('N function may be used only on list')
         case Ger(arg):
             res = isExpOfType(arg, env, envOfPlans, 'integer', program)
             if res:
                 return if_type == 'bool'
-            print("TypeError: Ger function works only on integers")
-            return False
+            raise TypecheckError("Ger function may be used only on integers")
         case Ord(arg):
             res = inferExprType(arg, env, envOfPlans, program)
             if type(res[1]) is List:
                 return res[1] == if_type
-            print('TypeError: Ord functions may be used only on list')
-            return False
+            raise TypecheckError('Ord functions may be used only on list')
         # case Im(var, list):
         #     is_list = inferExprType(list, env, envOfPlans, program)
         #     if type(is_list[1]) is List:
@@ -428,7 +431,7 @@ def typecheckPlanCall(expr, env, envOfPlans, program):
                         mi_name = idOfVar(envOfPlans[id].mi[m_index])
                         subEnv[mi_name] = mi_typ.typ
             else:
-                return (False, None)
+                raise TypecheckError(f"Cannot match type arguments while calling plan {id}")
             if inputFits(id, input, envOfPlans, env, program, subEnv) and phiFits(id, phi, envOfPlans):
                 out = typeOfOutput(id, output, envOfPlans, env, expr, subEnv)
                 if expr.phi is not None:
@@ -452,7 +455,7 @@ def typecheckPlanCall(expr, env, envOfPlans, program):
                 expr.id = name
                 return (res, out)
             else:
-                return (False, None)
+                raise TypecheckError(f"Cannot match arguments while calling plan {id}")
 
 
 def inputFits(id, input, envOfPlans, env, program, subEnv):
