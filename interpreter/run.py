@@ -125,6 +125,8 @@ def runStatement(ins, env, program):
         case Dec(var):
             name = idOfVar(var)
             env[name] = createValOfVar(var.typ)
+        case Fin(depth):
+            env['fin'] = int(depth)
 
 
 def runExpr(expr, env : dict, program):
@@ -287,7 +289,7 @@ def setValOfVar(var_comp, val, structure, env, program):
         comp = runExpr(var_comp[0], env, program)
         if comp >= len(structure.elements):
             raise RuntimeError("List index out of range")
-        res = setValOfVar([None], val, structure.elements[comp], env, program)
+        res = setValOfVar(var_comp[1], val, structure.elements[comp], env, program)
         structure.elements[comp] = res
         return structure
     res = setValOfVar(var_comp[1], val, structure.elements[var_comp[0]], env, program)
@@ -304,7 +306,7 @@ def getValOfVar(var_comp, val, env, program):
         comp = runExpr(var_comp[0], env, program)
         if comp >= len(val.elements):
             raise RuntimeError("List index out of range")
-        res = getValOfVar([None], val.elements[comp], env, program)
+        res = getValOfVar(var_comp[1], val.elements[comp], env, program)
         return res
     return getValOfVar(var_comp[1], val.elements[var_comp[0]], env, program)
 

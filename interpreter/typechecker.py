@@ -117,13 +117,15 @@ def typecheck(ins, env, envOfPlans, program):
             if not comp is None:
                 var_comp_type = variableCompType(whole_type, comp, env, envOfPlans, program)
                 if var_comp_type != dec_type:
+                    # TODO: tu coś źle
                     raise TypecheckError("Type mismatch: The type of the variable does not match the declared type")
             res = isExpOfType(expr, env, envOfPlans, dec_type, program)
             return res
         case If(cond, then):
             env['finDepth'] += 1
             if isExpOfType(cond, env, envOfPlans, 'bool', program):
-                res =  typecheck(then, env, envOfPlans, program)
+                subEnv = env.copy()
+                res =  typecheck(then, subEnv, envOfPlans, program)
                 env['finDepth'] -= 1
                 if not res:
                     raise TypecheckError("If condition not of Ja-Nein type")
@@ -196,6 +198,8 @@ def inferExprType(expr, env, envOfPlans, program):
                             raise TypecheckError("Type mismatch: The type of the variable does not match the declared type")
                         else:
                             return (True, dec_type)
+                else:
+                    raise TypecheckError("Use before declaration: Used variable havn't been declared")
             case Const():
                 raise TypecheckError(f"Const value in inappropriate place")
             case Index(id):
@@ -271,7 +275,7 @@ def inferExprType(expr, env, envOfPlans, program):
                     return res
                 raise TypecheckError("Plan call typechecking failed")
             case PhiUse(id, left, right, typ):
-                raise TypecheckError("Something went bad as hell, please report that, or change something in your code")
+                raise TypecheckError("Something went terribly wrong, please report this")
             case Nfun(arg):
                 res = inferExprType(arg, env, envOfPlans, program)
                 res = (type(res[1]) is List, ['integer'])
@@ -289,6 +293,8 @@ def inferExprType(expr, env, envOfPlans, program):
                 if res[0]:
                     return res
                 raise TypecheckError("Function Ord should be used on List")
+            case _:
+                raise TypecheckError(f"Something went bad. {expr}")
 
 
 def isExpOfType(expr, env, envOfPlans, if_type, program):
@@ -544,7 +550,7 @@ def variableCompType(typ, comp, env, envOfPlans, program):
             match typ:
                 case List(lenght, elements):
                     typ = elements
-                    comp = None
+                    comp = comp[1]
                 case _:
                     print(f"TypeError: type {type(typ)} is not indexable by variable")
                     return False
@@ -555,7 +561,7 @@ def variableCompType(typ, comp, env, envOfPlans, program):
             match typ:
                 case List(lenght, elements):
                     typ = elements
-                    comp = None
+                    comp = comp[1]
                 case _:
                     print(f"TypeError: type {type(typ)} is not indexable by variable")
                     return False
