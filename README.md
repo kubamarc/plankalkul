@@ -13,3 +13,4 @@ In the `examples` directory there are a few example programs written in my versi
 `fib.pla` and `fib2.pla` calculate Fibbonacci numbers using two methods: iterative and recursive, respectively.
 `even.pla` checks if a number is even using mutually recursive plans.
 `program19.pla` shows how to parametrise plans with type-variables.
+`sudoku.pla` is backtrack program which solves sudoku puzzle.
