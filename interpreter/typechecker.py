@@ -117,7 +117,6 @@ def typecheck(ins, env, envOfPlans, program):
             if not comp is None:
                 var_comp_type = variableCompType(whole_type, comp, env, envOfPlans, program)
                 if var_comp_type != dec_type:
-                    # TODO: tu coś źle
                     raise TypecheckError("Type mismatch: The type of the variable does not match the declared type")
             res = isExpOfType(expr, env, envOfPlans, dec_type, program)
             return res

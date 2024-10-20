@@ -107,7 +107,7 @@ def runStatement(ins, env, program):
             if not name in env:
                 env[name] = createValOfVar(var.typ)
             v = env[name]
-            env[name] = setValOfVar(var.component, val, v, env, program)
+            env[name] = setValOfVar(var.component, copy.deepcopy(val), v, env, program)
         case If(cond, then):
             if runExpr(cond, env, program) == "Ja":  #TODO: Należałoby się zastanowić, co jeśli cond zawiera jakieś wyrażenie modyfikujące środowisko (A może to wyłapuje typechecker?)
                 runStatement(then, env, program)
